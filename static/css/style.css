@@ -1,0 +1,265 @@
+/* MacOS SMS 웹앱 커스텀 스타일 */
+
+body {
+    background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+    min-height: 100vh;
+}
+
+.card {
+    border: none;
+    border-radius: 12px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+}
+
+.card-header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border-radius: 12px 12px 0 0 !important;
+    border: none;
+    padding: 1rem;
+}
+
+.btn {
+    border-radius: 8px;
+    font-weight: 500;
+    transition: all 0.2s ease;
+}
+
+.btn:hover {
+    transform: translateY(-1px);
+}
+
+.btn-primary {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border: none;
+}
+
+.btn-success {
+    background: linear-gradient(135deg, #56ab2f 0%, #a8e6cf 100%);
+    border: none;
+}
+
+.btn-danger {
+    background: linear-gradient(135deg, #ff6b6b 0%, #ffa8a8 100%);
+    border: none;
+}
+
+.form-control {
+    border-radius: 8px;
+    border: 2px solid #e9ecef;
+    transition: all 0.2s ease;
+}
+
+.form-control:focus {
+    border-color: #667eea;
+    box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+}
+
+.list-group-item {
+    border: none;
+    border-bottom: 1px solid #e9ecef;
+    transition: background-color 0.2s ease;
+}
+
+.list-group-item:hover {
+    background-color: #f8f9fa;
+}
+
+.contact-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.75rem 1rem;
+}
+
+.contact-info {
+    flex-grow: 1;
+}
+
+.contact-name {
+    font-weight: 600;
+    color: #495057;
+    margin-bottom: 0.25rem;
+}
+
+.contact-phone {
+    color: #6c757d;
+    font-size: 0.9rem;
+}
+
+/* 기존 recipient-item 스타일은 위에서 개선된 버전으로 대체됨 */
+
+.recipient-checkbox {
+    margin-right: 0.5rem;
+}
+
+.char-counter {
+    font-size: 0.875rem;
+    color: #6c757d;
+}
+
+.result-item {
+    padding: 0.75rem;
+    margin: 0.5rem 0;
+    border-radius: 8px;
+    border-left: 4px solid;
+}
+
+.result-success {
+    background: #d4edda;
+    border-left-color: #28a745;
+    color: #155724;
+}
+
+.result-error {
+    background: #f8d7da;
+    border-left-color: #dc3545;
+    color: #721c24;
+}
+
+.toast {
+    border-radius: 12px;
+    border: none;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+}
+
+.spinner-border {
+    width: 3rem;
+    height: 3rem;
+}
+
+/* 수신자 목록 고정 높이 */
+#recipientsList {
+    max-height: 300px;
+    overflow-y: auto;
+    border: 1px solid #e9ecef;
+    border-radius: 8px;
+    padding: 0.5rem;
+    background-color: #f8f9fa;
+}
+
+#recipientsList:empty {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 200px;
+}
+
+/* 수신자 아이템 스타일 개선 */
+.recipient-item {
+    padding: 0.75rem;
+    margin: 0.25rem 0;
+    border-radius: 8px;
+    background: white;
+    border: 1px solid #e9ecef;
+    transition: all 0.2s ease;
+}
+
+.recipient-item:hover {
+    background: #f0f8ff;
+    border-color: #667eea;
+    transform: translateX(2px);
+}
+
+/* 반응형 디자인 */
+@media (max-width: 768px) {
+    .container-fluid {
+        padding: 0;
+    }
+    
+    .card {
+        border-radius: 0;
+        margin-bottom: 1rem;
+    }
+    
+    .card-header {
+        border-radius: 0 !important;
+    }
+    
+    .col-md-4, .col-md-8 {
+        padding: 1rem;
+    }
+    
+    /* 모바일에서 수신자 목록 높이 조정 */
+    #recipientsList {
+        max-height: 250px;
+    }
+}
+
+/* 스크롤바 커스터마이징 */
+::-webkit-scrollbar {
+    width: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
+}
+
+/* 수신자 목록 전용 스크롤바 */
+#recipientsList::-webkit-scrollbar {
+    width: 6px;
+}
+
+#recipientsList::-webkit-scrollbar-track {
+    background: #e9ecef;
+    border-radius: 6px;
+}
+
+#recipientsList::-webkit-scrollbar-thumb {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border-radius: 6px;
+}
+
+#recipientsList::-webkit-scrollbar-thumb:hover {
+    background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
+}
+
+/* 애니메이션 */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.fade-in {
+    animation: fadeIn 0.5s ease-out;
+}
+
+/* 로딩 상태 */
+.loading {
+    opacity: 0.6;
+    pointer-events: none;
+}
+
+/* 체크박스 커스터마이징 */
+.form-check-input {
+    border-radius: 4px;
+    border: 2px solid #dee2e6;
+}
+
+.form-check-input:checked {
+    background-color: #667eea;
+    border-color: #667eea;
+}

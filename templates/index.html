@@ -45,19 +45,78 @@
                         <div class="tab-content" id="addContactTabsContent">
                             <!-- 직접 입력 탭 -->
                             <div class="tab-pane fade show active" id="manual-pane" role="tabpanel" aria-labelledby="manual-tab">
-                                <form id="addContactForm">
-                                    <div class="mb-3">
-                                        <label for="contactName" class="form-label">이름</label>
-                                        <input type="text" class="form-control" id="contactName" required>
-                                    </div>
-                                    <div class="mb-3">
-                                        <label for="contactPhone" class="form-label">전화번호</label>
-                                        <input type="tel" class="form-control" id="contactPhone" placeholder="010-1234-5678" required>
-                                    </div>
-                                    <button type="submit" class="btn btn-success w-100">
-                                        <i class="fas fa-plus"></i> 추가
-                                    </button>
-                                </form>
+                                <div class="mb-4">
+                                    <h6>한 명씩 추가</h6>
+                                    <form id="addContactForm">
+                                        <div class="mb-3">
+                                            <label for="contactName" class="form-label">이름</label>
+                                            <input type="text" class="form-control" id="contactName" required>
+                                        </div>
+                                        <div class="mb-3">
+                                            <label for="contactPhone" class="form-label">전화번호</label>
+                                            <input type="tel" class="form-control" id="contactPhone" placeholder="010-1234-5678" required>
+                                        </div>
+                                        <button type="submit" class="btn btn-success w-100">
+                                            <i class="fas fa-plus"></i> 추가
+                                        </button>
+                                    </form>
+                                </div>
+                                
+                                <hr>
+                                
+                                <div>
+                                    <h6>표로 여러명 추가</h6>
+                                    <form id="tableContactForm">
+                                        <div class="mb-3">
+                                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                                <label class="form-label mb-0">연락처 목록</label>
+                                                <div>
+                                                    <button type="button" class="btn btn-sm btn-outline-success me-2" id="addTableRowBtn">
+                                                        <i class="fas fa-plus"></i> 행 추가
+                                                    </button>
+                                                    <button type="button" class="btn btn-sm btn-outline-warning" id="clearTableBtn">
+                                                        <i class="fas fa-trash"></i> 전체 삭제
+                                                    </button>
+                                                </div>
+                                            </div>
+                                            
+                                            <div class="table-responsive" style="max-height: 400px; overflow-y: auto;">
+                                                <table class="table table-bordered table-sm" id="contactsInputTable">
+                                                    <thead class="table-light sticky-top">
+                                                        <tr>
+                                                            <th style="width: 40%;">이름</th>
+                                                            <th style="width: 50%;">전화번호</th>
+                                                            <th style="width: 10%;">삭제</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody id="contactsTableBody">
+                                                        <tr>
+                                                            <td><input type="text" class="form-control form-control-sm contact-name" placeholder="이름 입력"></td>
+                                                            <td><input type="tel" class="form-control form-control-sm contact-phone" placeholder="010-1234-5678"></td>
+                                                            <td class="text-center">
+                                                                <button type="button" class="btn btn-sm btn-outline-danger delete-row-btn">
+                                                                    <i class="fas fa-times"></i>
+                                                                </button>
+                                                            </td>
+                                                        </tr>
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                            
+                                            <div class="form-text">
+                                                <small>
+                                                    <i class="fas fa-info-circle text-info"></i>
+                                                    <strong>엑셀/구글시트에서 붙여넣기:</strong> 데이터를 복사한 후 첫 번째 이름 칸에 붙여넣으면 자동으로 표에 입력됩니다<br>
+                                                    <strong>한글 이름:</strong> UTF-8 지원으로 한글 이름 사용 가능<br>
+                                                    <strong>팁:</strong> 빈 행은 자동으로 제외됩니다
+                                                </small>
+                                            </div>
+                                        </div>
+                                        <button type="submit" class="btn btn-primary w-100">
+                                            <i class="fas fa-users"></i> 표의 연락처 모두 추가
+                                        </button>
+                                    </form>
+                                </div>
                             </div>
 
                             <!-- 파일 업로드 탭 -->
@@ -65,12 +124,14 @@
                                 <form id="uploadContactForm" enctype="multipart/form-data">
                                     <div class="mb-3">
                                         <label for="contactFile" class="form-label">연락처 파일</label>
-                                        <input type="file" class="form-control" id="contactFile" accept=".csv" required>
+                                        <input type="file" class="form-control" id="contactFile" accept=".csv,.md" required>
                                         <div class="form-text">
                                             <small>
-                                                <strong>지원 형식:</strong> CSV<br>
+                                                <strong>지원 형식:</strong> CSV, MD (마크다운)<br>
                                                 <strong>CSV 형식:</strong> 첫 번째 열 이름, 두 번째 열 전화번호<br>
-                                                <strong>샘플 파일:</strong> sample_contacts.csv (30개 연락처)
+                                                <strong>MD 형식:</strong> 번호→이름(소속) 전화번호 (예: 1→홍길동(회사) 010-1234-5678)<br>
+                                                <strong>인코딩:</strong> UTF-8, UTF-8-BOM, CP949 지원 (한글 이름 가능)<br>
+                                                <strong>샘플 파일:</strong> sample_contacts.csv (30개 연락처), number.md
                                             </small>
                                         </div>
                                     </div>

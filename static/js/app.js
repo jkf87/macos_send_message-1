@@ -53,6 +53,77 @@ class SMSApp {
             console.error('🔍 [DEBUG] addContactForm 요소를 찾을 수 없음');
         }
 
+        // 표 연락처 폼
+        const tableContactForm = document.getElementById('tableContactForm');
+        console.log('🔍 [DEBUG] 표 연락처 폼 요소:', !!tableContactForm);
+        
+        if (tableContactForm) {
+            tableContactForm.addEventListener('submit', (e) => {
+                console.log('🔍 [DEBUG] 표 폼 제출 이벤트 발생');
+                e.preventDefault();
+                this.submitTableContacts();
+            });
+        } else {
+            console.error('🔍 [DEBUG] tableContactForm 요소를 찾을 수 없음');
+        }
+
+        // 표 행 추가 버튼
+        const addTableRowBtn = document.getElementById('addTableRowBtn');
+        if (addTableRowBtn) {
+            addTableRowBtn.addEventListener('click', () => {
+                this.addTableRow();
+            });
+        }
+
+        // 표 전체 삭제 버튼
+        const clearTableBtn = document.getElementById('clearTableBtn');
+        if (clearTableBtn) {
+            clearTableBtn.addEventListener('click', () => {
+                this.clearTable();
+            });
+        }
+
+        // 표의 동적 이벤트 리스너 (이벤트 위임 사용)
+        const contactsTableBody = document.getElementById('contactsTableBody');
+        if (contactsTableBody) {
+            // 행 삭제 버튼
+            contactsTableBody.addEventListener('click', (e) => {
+                if (e.target.closest('.delete-row-btn')) {
+                    this.deleteTableRow(e.target.closest('tr'));
+                }
+            });
+
+            // 붙여넣기 감지 (첫 번째 이름 입력 필드에서)
+            contactsTableBody.addEventListener('paste', (e) => {
+                if (e.target.classList.contains('contact-name')) {
+                    e.preventDefault();
+                    this.handleTablePaste(e, e.target);
+                }
+            });
+
+            // Enter 키로 새 행 추가
+            contactsTableBody.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                    const currentRow = e.target.closest('tr');
+                    const isLastRow = !currentRow.nextElementSibling;
+                    const nameInput = currentRow.querySelector('.contact-name');
+                    const phoneInput = currentRow.querySelector('.contact-phone');
+                    
+                    if (isLastRow && (nameInput.value.trim() || phoneInput.value.trim())) {
+                        e.preventDefault();
+                        this.addTableRow();
+                        // 새로 추가된 행의 첫 번째 입력 필드로 포커스 이동
+                        setTimeout(() => {
+                            const newRow = currentRow.nextElementSibling;
+                            if (newRow) {
+                                newRow.querySelector('.contact-name').focus();
+                            }
+                        }, 10);
+                    }
+                }
+            });
+        }
+
         // 파일 업로드 폼
         document.getElementById('uploadContactForm').addEventListener('submit', (e) => {
             e.preventDefault();
@@ -737,6 +808,49 @@ class SMSApp {
         return phone.replace(/[^\d]/g, '');
     }
 
+    isValidPhone(phone) {
+        // 전화번호 유효성 검사
+        const cleanPhone = phone.replace(/[^\d]/g, '');
+        
+        console.log('🔍 [DEBUG] 전화번호 검증:', { original: phone, clean: cleanPhone });
+        
+        // 한국 휴대폰 번호 (010, 011, 016, 017, 018, 019)
+        const mobilePattern = /^01[0-9]\d{7,8}$/;
+        
+        // 일반 전화번호 (지역번호 포함)
+        const landlinePattern = /^0[2-9]\d{7,9}$/;
+        
+        const isValid = mobilePattern.test(cleanPhone) || landlinePattern.test(cleanPhone);
+        console.log('🔍 [DEBUG] 전화번호 검증 결과:', { cleanPhone, isValid });
+        
+        return isValid;
+    }
+
+    formatPhone(phone) {
+        // 전화번호 포맷팅 (하이픈 추가)
+        const cleanPhone = phone.replace(/[^\d]/g, '');
+        
+        if (cleanPhone.length === 11 && cleanPhone.startsWith('01')) {
+            // 휴대폰 번호: 010-1234-5678
+            return cleanPhone.replace(/(\d{3})(\d{4})(\d{4})/, '$1-$2-$3');
+        } else if (cleanPhone.length === 10 && cleanPhone.startsWith('0')) {
+            // 지역번호 + 8자리: 02-1234-5678
+            return cleanPhone.replace(/(\d{2})(\d{4})(\d{4})/, '$1-$2-$3');
+        } else if (cleanPhone.length === 9 && cleanPhone.startsWith('0')) {
+            // 지역번호 + 7자리: 031-123-4567
+            return cleanPhone.replace(/(\d{3})(\d{3})(\d{3})/, '$1-$2-$3');
+        }
+        
+        // 기본 포맷팅 시도
+        if (cleanPhone.length >= 11) {
+            return cleanPhone.replace(/(\d{3})(\d{4})(\d{4})/, '$1-$2-$3');
+        } else if (cleanPhone.length >= 7) {
+            return cleanPhone.replace(/(\d{3})(\d{4})/, '$1-$2');
+        }
+        
+        return cleanPhone;
+    }
+
     showToast(message, type = 'info') {
         const toast = document.getElementById('toast');
         const toastBody = document.getElementById('toastBody');
@@ -755,6 +869,14 @@ class SMSApp {
         
         const bsToast = new bootstrap.Toast(toast);
         bsToast.show();
+    }
+
+    showError(message) {
+        this.showToast(message, 'error');
+    }
+
+    showSuccess(message) {
+        this.showToast(message, 'success');
     }
 
     escapeHtml(text) {
@@ -846,6 +968,275 @@ class SMSApp {
         document.documentElement.style.paddingRight = '';
         
         console.log('🔍 [DEBUG] 모든 모달 강제 닫기 완료');
+    }
+
+    addTableRow() {
+        const tableBody = document.getElementById('contactsTableBody');
+        const newRow = document.createElement('tr');
+        
+        newRow.innerHTML = `
+            <td><input type="text" class="form-control form-control-sm contact-name" placeholder="이름 입력"></td>
+            <td><input type="tel" class="form-control form-control-sm contact-phone" placeholder="010-1234-5678"></td>
+            <td class="text-center">
+                <button type="button" class="btn btn-sm btn-outline-danger delete-row-btn">
+                    <i class="fas fa-times"></i>
+                </button>
+            </td>
+        `;
+        
+        tableBody.appendChild(newRow);
+        console.log('🔍 [DEBUG] 새 행 추가됨');
+    }
+
+    deleteTableRow(row) {
+        const tableBody = document.getElementById('contactsTableBody');
+        
+        // 최소 1개 행은 유지
+        if (tableBody.children.length > 1) {
+            row.remove();
+            console.log('🔍 [DEBUG] 행 삭제됨');
+        } else {
+            // 마지막 행이면 내용만 초기화
+            const nameInput = row.querySelector('.contact-name');
+            const phoneInput = row.querySelector('.contact-phone');
+            nameInput.value = '';
+            phoneInput.value = '';
+            nameInput.focus();
+            console.log('🔍 [DEBUG] 마지막 행 내용 초기화됨');
+        }
+    }
+
+    clearTable() {
+        const tableBody = document.getElementById('contactsTableBody');
+        
+        // 모든 행 삭제 후 빈 행 하나 추가
+        tableBody.innerHTML = `
+            <tr>
+                <td><input type="text" class="form-control form-control-sm contact-name" placeholder="이름 입력"></td>
+                <td><input type="tel" class="form-control form-control-sm contact-phone" placeholder="010-1234-5678"></td>
+                <td class="text-center">
+                    <button type="button" class="btn btn-sm btn-outline-danger delete-row-btn">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </td>
+            </tr>
+        `;
+        
+        console.log('🔍 [DEBUG] 표 전체 초기화됨');
+    }
+
+    handleTablePaste(event, targetInput) {
+        console.log('🔍 [DEBUG] 붙여넣기 이벤트 발생');
+        
+        // 클립보드에서 데이터 가져오기
+        const clipboardData = event.clipboardData || window.clipboardData;
+        const pastedData = clipboardData.getData('text');
+        
+        console.log('🔍 [DEBUG] 붙여넣기 데이터:', pastedData);
+        
+        // 멀티라인 또는 탭 구분 데이터인지 확인
+        if (pastedData.includes('\t') || pastedData.includes('\n')) {
+            console.log('🔍 [DEBUG] 표 형식 데이터 감지 - 자동 파싱 시작');
+            this.processPastedTableData(targetInput, pastedData);
+        } else {
+            // 단일 값인 경우 그대로 입력
+            targetInput.value = pastedData;
+            console.log('🔍 [DEBUG] 단일 값 입력 완료');
+        }
+    }
+
+    processPastedTableData(targetInput, pastedData) {
+        try {
+            const lines = pastedData.split('\n').filter(line => line.trim());
+            const tableBody = document.getElementById('contactsTableBody');
+            const currentRow = targetInput.closest('tr');
+            let processedCount = 0;
+            
+            console.log('🔍 [DEBUG] 처리할 줄 수:', lines.length);
+            
+            // 현재 행 초기화
+            currentRow.querySelector('.contact-name').value = '';
+            currentRow.querySelector('.contact-phone').value = '';
+            
+            lines.forEach((line, index) => {
+                const trimmedLine = line.trim();
+                if (!trimmedLine) return;
+                
+                console.log('🔍 [DEBUG] 처리 중인 줄:', trimmedLine);
+                
+                // 다양한 구분자로 분리 시도
+                let parts;
+                if (trimmedLine.includes('\t')) {
+                    // 탭으로 구분
+                    parts = trimmedLine.split('\t').map(part => part.trim()).filter(part => part);
+                } else if (trimmedLine.includes('  ')) {
+                    // 여러 스페이스로 구분 (2개 이상)
+                    parts = trimmedLine.split(/\s{2,}/).map(part => part.trim()).filter(part => part);
+                } else {
+                    // 단일 스페이스로 구분
+                    parts = trimmedLine.split(/\s+/).map(part => part.trim()).filter(part => part);
+                }
+                
+                console.log('🔍 [DEBUG] 분리된 부분:', parts);
+                
+                if (parts.length >= 2) {
+                    let name = parts[0];
+                    let phone = parts[parts.length - 1]; // 마지막 부분을 전화번호로 사용
+                    
+                    // 중간 부분들을 이름에 포함 (회사명 등)
+                    if (parts.length > 2) {
+                        name = parts.slice(0, -1).join(' ');
+                    }
+                    
+                    // 전화번호에서 숫자와 하이픈만 추출
+                    const cleanPhone = phone.replace(/[^\d-]/g, '');
+                    
+                    if (name && cleanPhone && cleanPhone.replace(/[^\d]/g, '').length >= 10) {
+                        if (processedCount === 0) {
+                            // 첫 번째 줄은 현재 행에 처리
+                            currentRow.querySelector('.contact-name').value = name;
+                            currentRow.querySelector('.contact-phone').value = cleanPhone;
+                            console.log('🔍 [DEBUG] 현재 행에 입력:', name, cleanPhone);
+                        } else {
+                            // 나머지 줄들은 새 행에 추가
+                            this.addTableRow();
+                            const newRow = tableBody.lastElementChild;
+                            newRow.querySelector('.contact-name').value = name;
+                            newRow.querySelector('.contact-phone').value = cleanPhone;
+                            console.log('🔍 [DEBUG] 새 행에 입력:', name, cleanPhone);
+                        }
+                        processedCount++;
+                    } else {
+                        console.log('🔍 [DEBUG] 무효한 데이터 건너뜀:', { name, phone, cleanPhone });
+                    }
+                } else {
+                    console.log('🔍 [DEBUG] 충분한 데이터가 없는 줄 건너뜀:', trimmedLine);
+                }
+            });
+            
+            if (processedCount > 0) {
+                console.log('🔍 [DEBUG] 붙여넣기 데이터 처리 완료, 처리된 행:', processedCount);
+                this.showSuccess(`${processedCount}개 연락처가 표에 입력되었습니다.`);
+            } else {
+                console.log('🔍 [DEBUG] 처리 가능한 데이터가 없음');
+                this.showError('붙여넣기 데이터에서 유효한 이름과 전화번호를 찾을 수 없습니다.\n각 줄에 이름과 전화번호가 포함되어 있는지 확인해 주세요.');
+            }
+            
+        } catch (error) {
+            console.error('🔍 [DEBUG] 붙여넣기 데이터 처리 오류:', error);
+            this.showError('붙여넣기 데이터 처리 중 오류가 발생했습니다.');
+        }
+    }
+
+    async submitTableContacts() {
+        console.log('🔍 [DEBUG] submitTableContacts 함수 호출됨');
+        
+        const tableBody = document.getElementById('contactsTableBody');
+        const rows = Array.from(tableBody.querySelectorAll('tr'));
+        const contacts = [];
+        const errors = [];
+        
+        console.log('🔍 [DEBUG] 테이블 행 수:', rows.length);
+        
+        rows.forEach((row, index) => {
+            const nameInput = row.querySelector('.contact-name');
+            const phoneInput = row.querySelector('.contact-phone');
+            const name = nameInput.value.trim();
+            const phone = phoneInput.value.trim();
+            
+            // 빈 행은 건너뛰기
+            if (!name && !phone) return;
+            
+            // 이름 또는 전화번호 중 하나만 입력된 경우 오류
+            if (!name || !phone) {
+                errors.push(`${index + 1}번째 행: 이름과 전화번호를 모두 입력해주세요.`);
+                return;
+            }
+            
+            // 전화번호 유효성 검사
+            if (!this.isValidPhone(phone)) {
+                errors.push(`${index + 1}번째 행: "${phone}" - 유효하지 않은 전화번호입니다.`);
+                return;
+            }
+            
+            contacts.push({
+                name: name,
+                phone: this.formatPhone(phone)
+            });
+        });
+        
+        console.log('🔍 [DEBUG] 표에서 수집한 연락처:', contacts.length);
+        console.log('🔍 [DEBUG] 오류:', errors.length);
+        
+        if (errors.length > 0) {
+            this.showError('입력 오류:\n' + errors.slice(0, 5).join('\n') + 
+                (errors.length > 5 ? `\n... 외 ${errors.length - 5}개 더` : ''));
+            return;
+        }
+        
+        if (contacts.length === 0) {
+            this.showError('추가할 연락처를 입력해주세요.');
+            return;
+        }
+        
+        try {
+            // 중복 체크
+            const existingPhones = new Set(this.contacts.map(contact => contact.phone));
+            const newContacts = contacts.filter(contact => !existingPhones.has(contact.phone));
+            const duplicates = contacts.filter(contact => existingPhones.has(contact.phone));
+            
+            if (newContacts.length === 0) {
+                this.showError('모든 연락처가 이미 존재합니다.');
+                return;
+            }
+            
+            // 서버에 연락처 추가하고 수신자 목록에도 추가
+            for (const contact of newContacts) {
+                const response = await fetch('/api/contacts', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(contact)
+                });
+
+                if (!response.ok) {
+                    throw new Error('연락처 추가 실패');
+                }
+                
+                const result = await response.json();
+                if (result.success && result.contact) {
+                    // 수신자 목록에 추가
+                    const newRecipient = {
+                        id: result.contact.id,
+                        name: result.contact.name,
+                        phone: result.contact.phone
+                    };
+                    this.selectedRecipients.add(newRecipient);
+                }
+            }
+            
+            // 수신자 목록 업데이트
+            this.renderRecipients();
+            
+            // 성공 메시지
+            let message = `${newContacts.length}명의 연락처가 추가되고 수신자 목록에 포함되었습니다.`;
+            if (duplicates.length > 0) {
+                message += `\n(${duplicates.length}명은 중복으로 제외되었습니다.)`;
+            }
+            
+            this.showSuccess(message);
+            
+            // 표 초기화
+            this.clearTable();
+            
+            // 연락처 목록 새로고침
+            this.loadContacts();
+            
+        } catch (error) {
+            console.error('🔍 [DEBUG] 표 연락처 추가 오류:', error);
+            this.showError('연락처 추가 중 오류가 발생했습니다.');
+        }
     }
 
     restoreScroll() {

@@ -16,7 +16,7 @@ CORS(app, origins=['http://localhost:5001', 'http://127.0.0.1:5001'])
 
 # 파일 업로드 보안 설정
 MAX_FILE_SIZE = 10 * 1024 * 1024  # 10MB
-ALLOWED_EXTENSIONS = {'.csv'}
+ALLOWED_EXTENSIONS = {'.csv', '.md'}
 
 # 연락처 데이터 저장 파일
 CONTACTS_FILE = 'contacts.json'
@@ -34,6 +34,65 @@ def save_contacts(contacts):
         json.dump(contacts, f, ensure_ascii=False, indent=2)
 
 
+
+def parse_markdown_file(content):
+    """마크다운 파일 파싱 (number.md 형식)"""
+    contacts = []
+    
+    try:
+        lines = content.strip().split('\n')
+        
+        for line_num, line in enumerate(lines, 1):
+            line = line.strip()
+            if not line:
+                continue
+                
+            # 패턴: 숫자→이름(소속) 전화번호
+            # 예: 1→한준구(삼양초) 010-1234-5678
+            import re
+            pattern = r'^\s*(\d+)→([^(]+)(?:\(([^)]*)\))?\s+(.+)$'
+            match = re.match(pattern, line)
+            
+            if match:
+                number, name, affiliation, phone = match.groups()
+                
+                # 이름과 전화번호 정리
+                name = name.strip()
+                phone = phone.strip()
+                affiliation = affiliation.strip() if affiliation else ""
+                
+                if name and phone:
+                    # 전화번호 정규화 (숫자만 추출)
+                    clean_phone = re.sub(r'[^\d]', '', phone)
+                    
+                    # 한국 휴대폰 번호 검증
+                    if len(clean_phone) >= 10 and clean_phone.startswith('01'):
+                        # 전화번호 포맷팅
+                        if len(clean_phone) == 11:
+                            formatted_phone = f"{clean_phone[:3]}-{clean_phone[3:7]}-{clean_phone[7:]}"
+                        elif len(clean_phone) == 10:
+                            formatted_phone = f"{clean_phone[:3]}-{clean_phone[3:6]}-{clean_phone[6:]}"
+                        else:
+                            formatted_phone = phone
+                        
+                        contact = {
+                            'name': name,
+                            'phone': formatted_phone,
+                            'affiliation': affiliation
+                        }
+                        contacts.append(contact)
+                        print(f"🔍 [DEBUG] MD 파싱 성공: {name} - {formatted_phone} ({affiliation})")
+                    else:
+                        print(f"🔍 [DEBUG] MD 파싱 실패 - 유효하지 않은 전화번호: {line}")
+                else:
+                    print(f"🔍 [DEBUG] MD 파싱 실패 - 이름 또는 전화번호 누락: {line}")
+            else:
+                print(f"🔍 [DEBUG] MD 파싱 실패 - 패턴 불일치: {line}")
+    
+    except Exception as e:
+        print(f"🔍 [DEBUG] MD 파일 파싱 오류: {e}")
+    
+    return contacts
 
 def parse_csv_file(content):
     """CSV 파일 파싱"""
@@ -231,7 +290,6 @@ def delete_contact(contact_id):
     
     return jsonify({'success': True})
 
-@app.route('/api/upload-contacts', methods=['POST'])
 def validate_file_upload(file):
     """파일 업로드 보안 검증"""
     if not file or file.filename == '':
@@ -251,10 +309,11 @@ def validate_file_upload(file):
     # 확장자 검사
     ext = os.path.splitext(file.filename.lower())[1]
     if ext not in ALLOWED_EXTENSIONS:
-        return False, 'CSV 파일만 업로드 가능합니다.'
+        return False, 'CSV 또는 MD 파일만 업로드 가능합니다.'
     
     return True, 'OK'
 
+@app.route('/api/upload-contacts', methods=['POST'])
 def upload_contacts():
     """파일에서 연락처 업로드"""
     app.logger.info("파일 업로드 API 호출됨")
@@ -276,21 +335,34 @@ def upload_contacts():
         app.logger.info(f"파일 업로드 시작: {filename} (크기: {file.tell()} bytes)")
         file.seek(0)  # 파일 포인터 리셋
         
-        # 파일 내용 읽기
+        # 파일 내용 읽기 (UTF-8-BOM 지원)
         try:
-            content = file.read().decode('utf-8')
+            # UTF-8-BOM으로 먼저 시도
+            file_content = file.read()
+            content = file_content.decode('utf-8-sig')
         except UnicodeDecodeError:
             try:
-                # UTF-8로 읽기 실패시 CP949 시도
-                file.seek(0)
-                content = file.read().decode('cp949')
+                # UTF-8로 시도
+                content = file_content.decode('utf-8')
             except UnicodeDecodeError:
-                return jsonify({'success': False, 'message': '파일 인코딩을 읽을 수 없습니다. UTF-8 또는 CP949로 저장해주세요.'}), 400
+                try:
+                    # CP949로 시도 (한글 윈도우 환경)
+                    content = file_content.decode('cp949')
+                except UnicodeDecodeError:
+                    return jsonify({'success': False, 'message': '파일 인코딩을 읽을 수 없습니다. UTF-8, UTF-8-BOM 또는 CP949로 저장해주세요.'}), 400
         
         print(f"🔍 [DEBUG] 파일 내용 길이: {len(content)} 문자")
         
-        # CSV 파일 파싱
-        parsed_contacts = parse_csv_file(content)
+        # 파일 확장자에 따른 파싱
+        file_extension = os.path.splitext(original_filename)[1].lower()
+        print(f"🔍 [DEBUG] 파일 확장자: {file_extension}")
+        
+        if file_extension == '.md':
+            parsed_contacts = parse_markdown_file(content)
+        elif file_extension == '.csv':
+            parsed_contacts = parse_csv_file(content)
+        else:
+            return jsonify({'success': False, 'message': '지원하지 않는 파일 형식입니다. CSV 또는 MD 파일을 업로드해주세요.'}), 400
         
         print(f"🔍 [DEBUG] 파싱된 연락처 수: {len(parsed_contacts)}")
         
